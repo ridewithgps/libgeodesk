@@ -5,11 +5,13 @@
 #include <cstdint>
 #include <catch2/catch_test_macros.hpp>
 #include <geodesk/geodesk.h>
+#include "TestPaths.h"
 
 // #define GEODESK_CONCUR_TEST
 #ifdef GEODESK_CONCUR_TEST
 
 using namespace geodesk;
+using namespace geodesk::test;
 
 // Structure to hold test information
 struct GeodeskConcurTest
@@ -42,8 +44,14 @@ struct test_name##_registrar                                     \
 } test_name##_registrar_instance;                                \
 int64_t test_name##_impl()
 
-// static Features world(R"(c:\geodesk\tests\mcxx.gol)");
-static Features world(R"(d:\geodesk\tests\monaco.gol)");
+// Lazy-loaded Features to allow skip checks before initialization
+static Features& getWorld()
+{
+    static Features world(getTestFile("monaco.gol").string().c_str());
+    return world;
+}
+
+#define world getWorld()
 
 
 Feature findLargestCountry()
@@ -424,6 +432,8 @@ GEODESK_TEST(lonlat_100nd_hash)
 
 TEST_CASE("concur")
 {
+    SKIP_IF_NO_TEST_FILE("monaco.gol");
+
     for(auto test: geodesk_concur_tests)
     {
         std::cout << test.name << "=" << test.function() << std::endl;
