@@ -1,12 +1,13 @@
 // Copyright (c) 2024 Clarisma / GeoDesk contributors
 // SPDX-License-Identifier: LGPL-3.0-only
 
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <random>
 #include <string_view>
 #include <catch2/catch_test_macros.hpp>
-#include <clarisma/cli/Console.h>
+// #include <clarisma/cli/Console.h>  // Not needed for tests
 #include <clarisma/util/log.h>
 
 #include "clarisma/libero/FreeStore_Transaction.h"
@@ -39,13 +40,14 @@ protected:
 
 TEST_CASE("FreeStore")
 {
-	const char *filename = R"(d:\geodesk\tests\freestore.bin)";
+	auto tempDir = std::filesystem::temp_directory_path();
+	auto filename = (tempDir / "geodesk-freestore-test.bin").string();
 
-	Console console;
+	// Console console;  // Removed - causes issues in test environment
 	TestFreeStore store;
 
-	std::remove(filename);
-	store.open(filename, FreeStore::OpenMode::WRITE | FreeStore::OpenMode::CREATE);
+	std::remove(filename.c_str());
+	store.open(filename.c_str(), FreeStore::OpenMode::WRITE | FreeStore::OpenMode::CREATE);
 	TestFreeStore::Transaction t0(store);
 	t0.begin();
 	t0.createStore();
@@ -77,6 +79,9 @@ TEST_CASE("FreeStore")
 	t3.end();
 
 	store.close();
+
+	// Clean up
+	std::remove(filename.c_str());
 }
 
 
@@ -93,13 +98,14 @@ TEST_CASE("FeatureStore simulation")
 
 	std::vector<Blob> tiles;
 
-	const char *filename = R"(d:\geodesk\tests\fstore-sim2.bin)";
+	auto tempDir = std::filesystem::temp_directory_path();
+	auto filename = (tempDir / "geodesk-fstore-sim.bin").string();
 
-	Console console;
+	// Console console;  // Removed - causes issues in test environment
 	TestFreeStore store;
-	std::remove(filename);
+	std::remove(filename.c_str());
 
-	store.open(filename, FreeStore::OpenMode::WRITE | FreeStore::OpenMode::CREATE);
+	store.open(filename.c_str(), FreeStore::OpenMode::WRITE | FreeStore::OpenMode::CREATE);
 	TestFreeStore::Transaction t0(store);
 	t0.begin();
 	t0.createStore();
@@ -116,7 +122,7 @@ TEST_CASE("FeatureStore simulation")
 	t0.end();
 	store.close();
 
-	store.open(filename, FreeStore::OpenMode::WRITE);
+	store.open(filename.c_str(), FreeStore::OpenMode::WRITE);
 
 	int typicalEdits = 200;
 
@@ -181,5 +187,7 @@ TEST_CASE("FeatureStore simulation")
 		std::cout << ex.what() << std::endl;
 	}
 	store.close();
-}
 
+	// Clean up
+	std::remove(filename.c_str());
+}

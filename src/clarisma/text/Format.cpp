@@ -246,8 +246,9 @@ char* formatDouble(char* out, double d, int precision, bool zeroFill)
     char* end = buf + sizeof(buf);
     char *start = unsignedIntegerReverse(intPart, end);
     // can't use signed because it drops sign if int portion is 0
+    // Only show negative sign if result is non-zero (avoid "-0")
     *(start - 1) = '-';
-    start = start - static_cast<int>(d < 0);
+    start = start - static_cast<int>(d < 0 && (intPart != 0 || fracPart != 0));
     auto wholePartLen = end - start;
     memcpy(out, start, wholePartLen);
     start = out + wholePartLen;

@@ -8,33 +8,29 @@
 #include <string_view>
 #include <catch2/catch_test_macros.hpp>
 #include <geodesk/geodesk.h>
+#include "TestPaths.h"
 
 using namespace geodesk;
+using namespace geodesk::test;
 
-struct GolFixture
+
+static Node asNode(Feature f)
 {
-	GolFixture() :
-		world(R"(d:\geodesk\tests\world.gol)"),
-		monaco(R"(d:\geodesk\tests\monaco.gol)")
-	{
-	}
+	return f;
+}
 
-	Features world;
-	Features monaco;
-};
 
-TEST_CASE_METHOD(GolFixture, "Features")
+TEST_CASE("Features")
 {
+	SKIP_IF_NO_TEST_FILE("world.gol");
+	Features world(getTestFile("world.gol").string().c_str());
+
 	Feature france = world("a[boundary=administrative][admin_level=2][name=France]").one();
-	Feature paris = world("a[boundary=administrative][admin_level=8][name=Paris]")(france).one(); // first().value();
+	Feature paris = world("a[boundary=administrative][admin_level=8][name=Paris]")(france).one();
 	std::cout << "Population of Paris: " << paris["population"] << std::endl;
 	REQUIRE(paris["name"] == "Paris");
 	REQUIRE(paris["population"] > 2'000'000);
-	/*
-	Feature usa = world("a[boundary=administrative][admin_level=2][name='United States']").one();
-	Features buildings = world("a[building]");
-	printf("%lld buildings in the US\n", buildings.within(usa).count());
-	*/
+
 	Ways streets = world("[highway=primary]");
 	std::cout << "There are " << streets.within(paris).count() << " streets" << std::endl;
 	for (Way street : streets.within(paris))
@@ -43,8 +39,11 @@ TEST_CASE_METHOD(GolFixture, "Features")
 	}
 }
 
-TEST_CASE_METHOD(GolFixture, "Features2")
+TEST_CASE("Features2")
 {
+	SKIP_IF_NO_TEST_FILE("world.gol");
+	Features world(getTestFile("world.gol").string().c_str());
+
 	Feature usa = world("a[boundary=administrative][admin_level=2][name='United States']").one();
 	Features buildings = world("a[building]");
 	Features usaBuildings = buildings(usa);
@@ -55,9 +54,11 @@ TEST_CASE_METHOD(GolFixture, "Features2")
 }
 
 
-TEST_CASE_METHOD(GolFixture, "Features 3")
+TEST_CASE("Features 3")
 {
-	Features france(R"(d:\geodesk\tests\france.gol)");
+	SKIP_IF_NO_TEST_FILE("france.gol");
+	Features france(getTestFile("france.gol").string().c_str());
+
 	Feature paris = france("a[boundary=administrative][admin_level=8][name=Paris]").one();
 	Features museums = france("na[tourism=museum]");
 	Features subwayStops = france("n[railway=station][station=subway]");
@@ -71,8 +72,11 @@ TEST_CASE_METHOD(GolFixture, "Features 3")
 	}
 }
 
-TEST_CASE_METHOD(GolFixture, "String values")
+TEST_CASE("String values")
 {
+	SKIP_IF_NO_TEST_FILE("monaco.gol");
+	Features monaco(getTestFile("monaco.gol").string().c_str());
+
 	std::vector<std::string> l;
 
 	for (auto f : monaco)
@@ -87,8 +91,8 @@ TEST_CASE_METHOD(GolFixture, "String values")
 	std::sort(l.begin(), l.end());
 
 	// Write to file (UTF-8)
-	std::ofstream out("d:\\geodesk\\tests\\monaco-cpp.txt",
-					  std::ios::out | std::ios::trunc);
+	auto outPath = getTestDataPath() / "monaco-cpp.txt";
+	std::ofstream out(outPath, std::ios::out | std::ios::trunc);
 	out.imbue(std::locale::classic());
 	for (const std::string& s : l)
 	{
@@ -97,8 +101,11 @@ TEST_CASE_METHOD(GolFixture, "String values")
 }
 
 
-TEST_CASE_METHOD(GolFixture, "Int values")
+TEST_CASE("Int values")
 {
+	SKIP_IF_NO_TEST_FILE("monaco.gol");
+	Features monaco(getTestFile("monaco.gol").string().c_str());
+
 	std::vector<std::string> l;
 
 	for (auto f : monaco)
@@ -114,8 +121,8 @@ TEST_CASE_METHOD(GolFixture, "Int values")
 	std::sort(l.begin(), l.end());
 
 	// Write to file (UTF-8)
-	std::ofstream out("d:\\geodesk\\tests\\monaco-ints-cpp.txt",
-					  std::ios::out | std::ios::trunc);
+	auto outPath = getTestDataPath() / "monaco-ints-cpp.txt";
+	std::ofstream out(outPath, std::ios::out | std::ios::trunc);
 	out.imbue(std::locale::classic());
 	for (const std::string& s : l)
 	{
@@ -124,30 +131,11 @@ TEST_CASE_METHOD(GolFixture, "Int values")
 }
 
 
-/*
-
-// This does not compile (deliberate error:
-// attempt to assign Way to Node)
-
 TEST_CASE("Type safety of Features")
 {
-	Features world(R"(c:\geodesk\tests\monaco.gol)");
-	Ways ways = world;
-	for(Node n: ways)
-	{
-		std::cout << n.xy() << std::endl;
-	}
-}
-*/
+	SKIP_IF_NO_TEST_FILE("monaco.gol");
+	Features monaco(getTestFile("monaco.gol").string().c_str());
 
-
-static Node asNode(Feature f)
-{
-	return f;
-}
-
-TEST_CASE_METHOD(GolFixture, "Type safety of Features")
-{
 	Ways ways = monaco;
 	for(Feature f: ways)
 	{
@@ -155,28 +143,40 @@ TEST_CASE_METHOD(GolFixture, "Type safety of Features")
 	}
 }
 
-TEST_CASE_METHOD(GolFixture, "Empty Features")
+TEST_CASE("Empty Features")
 {
+	SKIP_IF_NO_TEST_FILE("monaco.gol");
+	Features monaco(getTestFile("monaco.gol").string().c_str());
+
 	Features set = monaco("na[xyz:nonsense_tag]");
 	REQUIRE(!set);
 }
 
-TEST_CASE_METHOD(GolFixture, "Lookup with empty Key")
+TEST_CASE("Lookup with empty Key")
 {
+	SKIP_IF_NO_TEST_FILE("monaco.gol");
+	Features monaco(getTestFile("monaco.gol").string().c_str());
+
 	Key empty;
 	TagValue v = monaco.first().value()[empty];
 	REQUIRE(v == "");
 }
 
-TEST_CASE_METHOD(GolFixture, "Lookup with Key")
+TEST_CASE("Lookup with Key")
 {
+	SKIP_IF_NO_TEST_FILE("monaco.gol");
+	Features monaco(getTestFile("monaco.gol").string().c_str());
+
 	Key highway = monaco.key("highway");
 	TagValue v = monaco("w[highway]").first().value()[highway];
 	REQUIRE(v != "");
 }
 
-TEST_CASE_METHOD(GolFixture, "Iterate tags of anonymous nodes")
+TEST_CASE("Iterate tags of anonymous nodes")
 {
+	SKIP_IF_NO_TEST_FILE("monaco.gol");
+	Features monaco(getTestFile("monaco.gol").string().c_str());
+
 	int untaggedNodeCount = 0;
 	int highwayNodeCount = 0;
 	for (Way street : monaco("w[highway]"))
@@ -196,7 +196,9 @@ TEST_CASE_METHOD(GolFixture, "Iterate tags of anonymous nodes")
 
 TEST_CASE("Issue 21")
 {
-	Features world("d:\\geodesk\\tests\\world.gol");
+	SKIP_IF_NO_TEST_FILE("world.gol");
+	Features world(getTestFile("world.gol").string().c_str());
+
 	Box tileBounds = Box::ofWSEN(-10, -10, 10, 10);
 	Features tile = world(tileBounds);
 	Features features = tile("w");
@@ -204,7 +206,9 @@ TEST_CASE("Issue 21")
 
 TEST_CASE("WayNodes")
 {
-	Features features("d:\\geodesk\\tests\\liguria.gol");
+	SKIP_IF_NO_TEST_FILE("liguria.gol");
+	Features features(getTestFile("liguria.gol").string().c_str());
+
 	uint64_t count = 0;
 	for (auto street : features("w[highway]"))
 	{
@@ -219,11 +223,14 @@ TEST_CASE("WayNodes")
 }
 
 
-TEST_CASE_METHOD(GolFixture, "role() of non-members (Issue 24)")
+TEST_CASE("role() of non-members (Issue 24)")
 {
+	SKIP_IF_NO_TEST_FILE("monaco.gol");
+	Features monaco(getTestFile("monaco.gol").string().c_str());
+
 	for (Way way : monaco.ways())
 	{
-		if (way.role()) // <-- SEGFAULT
+		if (way.role()) // <-- SEGFAULT (before fix)
 		{
 			std::cout << way << " as " << way.role() << std::endl;
 		}
@@ -232,7 +239,9 @@ TEST_CASE_METHOD(GolFixture, "role() of non-members (Issue 24)")
 
 TEST_CASE("WayNodes with IDs (#25)")
 {
-	Features features("d:\\geodesk\\tests\\mcu.gol");
+	SKIP_IF_NO_TEST_FILE("mcu.gol");
+	Features features(getTestFile("mcu.gol").string().c_str());
+
 	uint64_t count = 0;
 	for (auto street : features("w[highway]"))
 	{
